@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LDP Quote Tool - Land Development Partners</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 300;
+        }
+
+        .login-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .login-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            height: calc(100vh - 80px);
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .sidebar {
+            width: 450px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .map-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .form-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .form-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.85rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.6rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .results-section {
+            margin-top: 2rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .site-number {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .price-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .result-details {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .result-details-internal {
+            display: none;
+        }
+
+        .internal .result-details-internal {
+            display: block;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-top: 0.25rem;
+        }
+
+        .status-open { background: #28a745; color: white; }
+        .status-hot { background: #dc3545; color: white; }
+        .status-bidding { background: #ffc107; color: black; }
+        .status-inprogress { background: #17a2b8; color: white; }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .input-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 2rem;
+        }
+
+        .map-legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .legend-marker {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.7rem;
+        }
+
+        .export-marker { background: #dc3545; }
+        .import-marker { background: #28a745; }
+        .unknown-marker { background: #6c757d; }
+        .user-marker { background: #ff6b35; }
+
+        .calculation-details {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .traffic-data table {
+            font-size: 0.65rem;
+            border-collapse: collapse;
+        }
+
+        .traffic-data th, .traffic-data td {
+            padding: 0.2rem 0.4rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .traffic-data th {
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 400px;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Land Development Partners - Quote Tool</h1>
+        <button class="login-toggle" onclick="toggleLoginMode()">
+            <span id="loginText">Switch to Internal View</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <form id="quoteForm">
+                <div class="form-section">
+                    <h3>Project Details</h3>
+                    
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="jobType">Job Type *</label>
+                            <select id="jobType" class="form-control" required>
+                                <option value="">Select Job Type</option>
+                                <option value="Export">Export</option>
+                                <option value="Import">Import</option>
+                                <option value="Unknown">Unknown</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="region">Region *</label>
+                            <select id="region" class="form-control" required>
+                                <option value="">Select Region</option>
+                                <option value="San Diego County">San Diego County</option>
+                                <option value="Riverside County">Riverside County</option>
+                                <option value="Orange County">Orange County</option>
+                                <option value="LA County">LA County</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectLocation">Project Location *</label>
+                        <input type="text" id="projectLocation" class="form-control" placeholder="Enter full address" required>
+                    </div>
+
+                    <div class="input-row-3">
+                        <div class="form-group">
+                            <label for="projectCity">City</label>
+                            <input type="text" id="projectCity" class="form-control" placeholder="City">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectState">State</label>
+                            <input type="text" id="projectState" class="form-control" placeholder="CA" maxlength="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectZip">Zip Code</label>
+                            <input type="text" id="projectZip" class="form-control" placeholder="92101" maxlength="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="parcelNo">Parcel Number</label>
+                        <input type="text" id="parcelNo" class="form-control" placeholder="Optional">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Material Specifications</h3>
+                    
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="quantity">Quantity (cu yds) *</label>
+                            <input type="number" id="quantity" class="form-control" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="truckType">Truck Type *</label>
+                            <select id="truckType" class="form-control" required>
+                                <option value="">Select Truck Type</option>
+                                <option value="Open">Open</option>
+                                <option value="10 Wh">10 Wh</option>
+                                <option value="S10">S10</option>
+                                <option value="ED (LS)">ED (LS)</option>
+                                <option value="ED (HS)">ED (HS)</option>
+                                <option value="BD">BD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="materialDesc">Material Description *</label>
+                        <input type="text" id="materialDesc" class="form-control" placeholder="e.g., Cobble, Clay, Sandy" required>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="expansionIndex">Expansion Index *</label>
+                            <select id="expansionIndex" class="form-control" required>
+                                <option value="">Select Index</option>
+                                <option value="Non-Expansive">Non-Expansive</option>
+                                <option value="20 or Better">20 or Better</option>
+                                <option value="50 or Better">50 or Better</option>
+                                <option value="Expansive">Expansive - 50 or <</option>
+                                <option value="Highly Expansive">Highly Expansive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="rock">Rock Type *</label>
+                            <select id="rock" class="form-control" required>
+                                <option value="">Select Rock</option>
+                                <option value="None">None</option>
+                                <option value="3\" Minus">3" Minus</option>
+                                <option value="6\" Minus">6" Minus</option>
+                                <option value="1' Minus">1' Minus</option>
+                                <option value="2' Minus">2' Minus</option>
+                                <option value="3' Minus">3' Minus</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Financial & Timeline</h3>
+                    
+                    <div class="input-row-3">
+                        <div class="form-group">
+                            <label for="budget">Budget ($)</label>
+                            <input type="number" id="budget" class="form-control" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="dumpFee">Dump Fee ($)</label>
+                            <input type="number" id="dumpFee" class="form-control" placeholder="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="ldpFee">LDP Fee ($)</label>
+                            <input type="number" id="ldpFee" class="form-control" placeholder="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="estimatedStart">Estimated Start</label>
+                            <input type="date" id="estimatedStart" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="extraTime">Extra Time (mins)</label>
+                            <input type="number" id="extraTime" class="form-control" placeholder="0" value="15">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section internal-only" style="display: none;">
+                    <h3>Contact Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="company">Company/Account</label>
+                        <input type="text" id="company" class="form-control" placeholder="Company Name">
+                    </div>
+
+                    <div class="input-row-3">
+                        <div class="form-group">
+                            <label for="contactName">Contact Name</label>
+                            <input type="text" id="contactName" class="form-control" placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactPhone">Phone</label>
+                            <input type="tel" id="contactPhone" class="form-control" placeholder="(555) 123-4567">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email</label>
+                            <input type="email" id="contactEmail" class="form-control" placeholder="contact@company.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" class="form-control" rows="2" placeholder="Additional project notes..."></textarea>
+                    </div>
+                </div>
+
+                <button type="button" class="btn" onclick="calculateQuotes()">
+                    Calculate Quotes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                    Clear Form
+                </button>
+            </form>
+
+            <div id="results" class="results-section"></div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-marker export-marker">E</div>
+                    <span>Export Sites</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-marker import-marker">I</div>
+                    <span>Import Sites</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-marker unknown-marker">U</div>
+                    <span>Unknown Sites</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-marker user-marker">📍</div>
+                    <span>Your Location</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let markers = [];
+        let service;
+        let geocoder;
+        let isInternalView = false;
+
+        // API endpoints configuration
+        const API_BASE = '/api';
+        
+        // Data loading and management
+        let siteData = [];
+        let isLoadingData = false;
+
+        // Matching rules implementation
+        const matchingRules = {
+            // Job Status rules - only these statuses can be shown in results
+            validStatuses: ['Bidding', 'Open', 'HOT', 'In Progress'],
+            
+            // Job Type rules
+            getMatchingJobTypes: (userJobType) => {
+                if (userJobType === 'Export') return ['Import'];
+                if (userJobType === 'Import') return ['Export'];
+                if (userJobType === 'Unknown') return ['Import', 'Export', 'Unknown'];
+                return [];
+            },
+
+            // Rock matching rules
+            getMatchingRocks: (userRock) => {
+                const rockHierarchy = ['None', '3\" Minus', '6\" Minus', '1\' Minus', '2\' Minus', '3\' Minus'];
+                const userIndex = rockHierarchy.indexOf(userRock);
+                if (userIndex === -1) return rockHierarchy;
+                return rockHierarchy.slice(0, userIndex + 1);
+            },
+
+            // Truck Type matching rules
+            getMatchingTruckTypes: (userTruckType) => {
+                const truckRules = {
+                    'Open': ['Open', '10 Wh', 'S10', 'ED (LS)', 'ED (HS)', 'BD'],
+                    '10 Wh': ['10 Wh', 'S10'],
+                    'S10': ['S10', '10 Wh'],
+                    'ED (LS)': ['ED (LS)'],
+                    'ED (HS)': ['ED (HS)'],
+                    'BD': ['BD']
+                };
+                return truckRules[userTruckType] || [];
+            },
+
+            // Expansion Index matching rules
+            getMatchingExpansionIndexes: (userIndex, userJobType) => {
+                const indexes = ['Non-Expansive', '20 or Better', '50 or Better', 'Expansive', 'Highly Expansive'];
+                const userIndexPos = indexes.indexOf(userIndex);
+                
+                if (userJobType === 'Export') {
+                    // Export rules: can go to any import with equal or higher expansiveness
+                    return indexes.slice(userIndexPos);
+                } else {
+                    // Import rules: can accept from any export with equal or lower expansiveness
+                    return indexes.slice(0, userIndexPos + 1);
+                }
+            }
+        };
+
+        // Load data from MongoDB via Flask API
+        async function loadSiteData() {
+            if (isLoadingData) return;
+            isLoadingData = true;
+            
+            try {
+                showDataLoadingIndicator();
+                
+                const response = await fetch(`${API_BASE}/sites`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const mongoData = await response.json();
+                siteData = transformMongoDataToSites(mongoData);
+                
+                // Add markers to map
+                siteData.forEach(site => {
+                    addMarkerToMap(site);
+                });
+                
+                hideDataLoadingIndicator();
+                console.log(`Loaded ${siteData.length} sites from database`);
+                
+            } catch (error) {
+                console.error('Error loading site data:', error);
+                showDataLoadError(error);
+            } finally {
+                isLoadingData = false;
+            }
+        }
+
+        // Transform MongoDB data to application format
+        function transformMongoDataToSites(mongoRecords) {
+            return mongoRecords.map(record => {
+                // Parse work location for coordinates (simplified - in real app you'd geocode)
+                const location = parseWorkLocation(record['Work Location'] || '');
+                
+                // Derive job type from record type and description
+                const jobType = deriveJobType(record['Record Type'], record['Project Description']);
+                
+                // Map application status to internal status
+                const status = mapApplicationStatus(record['Application Status']);
+                
+                return {
+                    // Core identifiers
+                    mongoId: record._id,
+                    siteNo: record['Record Number'] || `SITE-${record._id.slice(-6)}`,
+                    entryDate: record.Date || new Date().toISOString().split('T')[0],
+                    
+                    // Status and type
+                    status: status,
+                    jobType: jobType,
+                    
+                    // Location data
+                    projectLocation: record['Work Location'] || 'Location not specified',
+                    projectCity: location.city || 'Unknown',
+                    projectState: location.state || 'CA',
+                    projectZip: location.zip || '',
+                    lat: location.lat || (32.7157 + (Math.random() - 0.5) * 0.5), // Fallback with random offset
+                    lng: location.lng || (-117.1611 + (Math.random() - 0.5) * 0.5),
+                    
+                    // Material specifications (defaults since not in permit data)
+                    quantity: Math.floor(Math.random() * 5000) + 500, // Random default
+                    materialDesc: record['Project Description'] || 'Mixed Fill',
+                    expansionIndex: getRandomExpansionIndex(),
+                    rock: getRandomRockType(),
+                    truckType: 'Open', // Default truck type
+                    
+                    // Company/Contact (permit data doesn't include this)
+                    company: record.Department || 'Municipal Project',
+                    contactName: 'Permit Contact',
+                    contactPhone: '(555) 000-0000',
+                    contactEmail: 'permits@city.gov',
+                    
+                    // Financial (defaults)
+                    budget: 0,
+                    dumpFee: Math.floor(Math.random() * 50) + 25,
+                    ldpFee: Math.floor(Math.random() * 30) + 15,
+                    
+                    // Additional data
+                    notes: record['Short Notes'] || '',
+                    permitUrl: record.URL || '',
+                    recordType: record['Record Type'] || '',
+                    department: record.Department || '',
+                    
+                    // Calculated fields (will be populated during quote calculation)
+                    distance: 0,
+                    roundtripTimeMinutes: 0,
+                    truckingPrice: 0,
+                    totalPrice: 0
+                };
+            });
+        }
+
+        // Helper functions for data transformation
+        function parseWorkLocation(workLocation) {
+            // Simple parser for "13161 S HAVEN AV ONTARIO CA 91761 *" format
+            const parts = workLocation.replace(/\*/g, '').trim().split(/\s+/);
+            const result = {
+                city: null,
+                state: null,
+                zip: null,
+                lat: null,
+                lng: null
+            };
+            
+            // Look for state (2-letter code) and zip (5 digits)
+            for (let i = parts.length - 1; i >= 0; i--) {
+                if (/^\d{5}$/.test(parts[i])) {
+                    result.zip = parts[i];
+                } else if (/^[A-Z]{2}$/.test(parts[i]) && !result.state) {
+                    result.state = parts[i];
+                    // City is typically before state
+                    if (i > 0 && !result.city) {
+                        result.city = parts[i - 1];
+                    }
+                }
+            }
+            
+            return result;
+        }
+
+        function deriveJobType(recordType, projectDescription) {
+            const type = (recordType + ' ' + (projectDescription || '')).toLowerCase();
+            
+            if (type.includes('grading') || type.includes('excavat') || type.includes('demo')) {
+                return 'Export';
+            } else if (type.includes('fill') || type.includes('import') || type.includes('backfill')) {
+                return 'Import';
+            }
+            
+            return 'Unknown';
+        }
+
+        function mapApplicationStatus(appStatus) {
+            if (!appStatus) return 'Unknown';
+            
+            const status = appStatus.toLowerCase();
+            if (status.includes('review') || status.includes('pending')) return 'Open';
+            if (status.includes('approved') || status.includes('active')) return 'HOT';
+            if (status.includes('issued')) return 'In Progress';
+            if (status.includes('complete') || status.includes('final')) return 'Completed';
+            if (status.includes('cancelled') || status.includes('expired')) return 'Completed (Other)';
+            
+            return 'Open'; // Default
+        }
+
+        function getRandomExpansionIndex() {
+            const indexes = ['Non-Expansive', '20 or Better', '50 or Better', 'Expansive', 'Highly Expansive'];
+            return indexes[Math.floor(Math.random() * indexes.length)];
+        }
+
+        function getRandomRockType() {
+            const rocks = ['None', '3" Minus', '6" Minus', '1\' Minus', '2\' Minus', '3\' Minus'];
+            return rocks[Math.floor(Math.random() * rocks.length)];
+        }
+
+        // Loading indicator functions
+        function showDataLoadingIndicator() {
+            const mapContainer = document.querySelector('.map-container');
+            const indicator = document.createElement('div');
+            indicator.id = 'data-loading-indicator';
+            indicator.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(255, 255, 255, 0.95);
+                padding: 2rem;
+                border-radius: 10px;
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 1000;
+            `;
+            indicator.innerHTML = `
+                <div style="color: #667eea; font-size: 1rem; margin-bottom: 0.5rem;">Loading Sites</div>
+                <div style="color: #666; font-size: 0.8rem;">Fetching latest permit data...</div>
+            `;
+            mapContainer.appendChild(indicator);
+        }
+
+        function hideDataLoadingIndicator() {
+            const indicator = document.getElementById('data-loading-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function showDataLoadError(error) {
+            hideDataLoadingIndicator();
+            const mapContainer = document.querySelector('.map-container');
+            const errorDiv = document.createElement('div');
+            errorDiv.id = 'data-error-indicator';
+            errorDiv.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(220, 53, 69, 0.95);
+                color: white;
+                padding: 2rem;
+                border-radius: 10px;
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            errorDiv.innerHTML = `
+                <div style="font-size: 1rem; margin-bottom: 0.5rem;">Data Load Error</div>
+                <div style="font-size: 0.8rem; margin-bottom: 1rem;">Unable to load site data from database</div>
+                <button onclick="retryDataLoad()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">Retry</button>
+            `;
+            mapContainer.appendChild(errorDiv);
+        }
+
+        function retryDataLoad() {
+            const errorIndicator = document.getElementById('data-error-indicator');
+            if (errorIndicator) {
+                errorIndicator.remove();
+            }
+            loadSiteData();
+        }
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 32.7157, lng: -117.1611 }, // San Diego center
+                zoom: 10,
+                styles: [
+                    {
+                        featureType: "all",
+                        elementType: "geometry.fill",
+                        stylers: [{ weight: "2.00" }]
+                    },
+                    {
+                        featureType: "all",
+                        elementType: "geometry.stroke",
+                        stylers: [{ color: "#9c9c9c" }]
+                    },
+                    {
+                        featureType: "all",
+                        elementType: "labels.text",
+                        stylers: [{ visibility: "on" }]
+                    }
+                ]
+            });
+
+            service = new google.maps.DistanceMatrixService();
+            geocoder = new google.maps.Geocoder();
+
+            // Load data from MongoDB via Flask API
+            loadSiteData();
+        }
+
+        function addMarkerToMap(site) {
+            const markerColor = site.jobType === 'Export' ? '#dc3545' : 
+                               site.jobType === 'Import' ? '#28a745' : '#6c757d';
+            const markerLabel = site.jobType === 'Export' ? 'E' : 
+                               site.jobType === 'Import' ? 'I' : 'U';
+
+            const marker = new google.maps.Marker({
+                position: { lat: site.lat, lng: site.lng },
+                map: map,
+                title: `${site.siteNo} - ${site.company}`,
+                label: {
+                    text: markerLabel,
+                    color: 'white',
+                    fontWeight: 'bold'
+                },
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: markerColor,
+                    fillOpacity: 1,
+                    strokeColor: 'white',
+                    strokeWeight: 2,
+                    scale: 15
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: createInfoWindowContent(site)
+            });
+
+            marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+            });
+
+            markers.push(marker);
+        }
+
+        function createInfoWindowContent(site) {
+            const markerColor = site.jobType === 'Export' ? '#dc3545' : '#28a745';
+            
+            return `
+                <div style="padding: 10px; max-width: 280px;">
+                    <h4 style="margin: 0 0 10px 0; color: ${markerColor};">${site.siteNo}</h4>
+                    <p><strong>Status:</strong> <span class="status-badge status-${site.status.toLowerCase().replace(' ', '')}">${site.status}</span></p>
+                    <p><strong>Type:</strong> ${site.jobType}</p>
+                    <p><strong>Quantity:</strong> ${site.quantity.toLocaleString()} cu yds</p>
+                    <p><strong>Material:</strong> ${site.materialDesc}</p>
+                    <p><strong>Expansion:</strong> ${site.expansionIndex}</p>
+                    <p><strong>Rock:</strong> ${site.rock}</p>
+                    <p><strong>Truck:</strong> ${site.truckType}</p>
+                    <p><strong>Company:</strong> ${site.company}</p>
+                    <p><strong>Contact:</strong> ${site.contactName}</p>
+                    <p><strong>Phone:</strong> ${site.contactPhone}</p>
+                    <p><strong>Location:</strong> ${site.projectLocation}</p>
+                    ${site.notes ? `<p><strong>Notes:</strong> ${site.notes}</p>` : ''}
+                    ${site.permitUrl ? `<p><a href="${site.permitUrl}" target="_blank">View Permit</a></p>` : ''}
+                </div>
+            `;
+        }
+
+        function toggleLoginMode() {
+            isInternalView = !isInternalView;
+            const loginText = document.getElementById('loginText');
+            const internalSections = document.querySelectorAll('.internal-only');
+            const body = document.body;
+            
+            if (isInternalView) {
+                loginText.textContent = 'Switch to External View';
+                internalSections.forEach(section => section.style.display = 'block');
+                body.classList.add('internal');
+            } else {
+                loginText.textContent = 'Switch to Internal View';
+                internalSections.forEach(section => section.style.display = 'none');
+                body.classList.remove('internal');
+            }
+        }
+
+        // Replace the existing calculateDistancesAndPricing function with this enhanced version
+        async function calculateDistancesAndPricing(formData, matches) {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Show progress indicator
+                resultsDiv.innerHTML = '<div class="loading">Calculating real-time distances and travel times...</div>';
+                
+                // Process matches in batches (Google Distance Matrix API has limits)
+                const batchSize = 10; // Max 10 destinations per request
+                const processedMatches = [];
+                
+                for (let i = 0; i < matches.length; i += batchSize) {
+                    const batch = matches.slice(i, i + batchSize);
+                    const batchResults = await calculateBatchDistances(formData, batch);
+                    processedMatches.push(...batchResults);
+                    
+                    // Update progress
+                    const progress = Math.round(((i + batchSize) / matches.length) * 100);
+                    resultsDiv.innerHTML = `<div class="loading">Processing ${Math.min(progress, 100)}% complete...</div>`;
+                }
+                
+                // Sort by total price (lowest first)
+                processedMatches.sort((a, b) => a.totalPrice - b.totalPrice);
+                
+                displayResults(processedMatches, formData);
+                
+            } catch (error) {
+                console.error('Error calculating distances:', error);
+                showError('Unable to calculate distances. Please check your internet connection and try again.');
+                
+                // Fallback to simulated calculations
+                const fallbackMatches = matches.map(site => {
+                    const baseDistance = calculateSimulatedDistance(formData.location, site.projectLocation);
+                    const roundtripTimeMinutes = Math.round((baseDistance * 2.5) + formData.extraTime);
+                    const truckingPrice = Math.round(roundtripTimeMinutes * 2.42);
+                    const totalPrice = truckingPrice + (site.dumpFee || 0) + (site.ldpFee || 0);
+                    
+                    return {
+                        ...site,
+                        distance: baseDistance,
+                        roundtripTimeMinutes,
+                        truckingPrice,
+                        totalPrice,
+                        calculationDetails: {
+                            baseTime: roundtripTimeMinutes - formData.extraTime,
+                            extraTime: formData.extraTime,
+                            truckingRate: 2.42,
+                            dumpFee: site.dumpFee || 0,
+                            ldpFee: site.ldpFee || 0
+                        },
+                        isEstimated: true
+                    };
+                }).sort((a, b) => a.totalPrice - b.totalPrice);
+                
+                displayResults(fallbackMatches, formData);
+            }
+        }
+
+        // New function to handle batch distance calculations
+        function calculateBatchDistances(formData, batch) {
+            return new Promise((resolve, reject) => {
+                // Prepare destinations array
+                const destinations = batch.map(site => ({
+                    lat: site.lat,
+                    lng: site.lng
+                }));
+                
+                // Multiple time calculations for better accuracy
+                const timeSlots = [
+                    { hour: 7, label: '7 AM' },
+                    { hour: 9, label: '9 AM' },
+                    { hour: 11, label: '11 AM' },
+                    { hour: 13, label: '1 PM' }
+                ];
+                
+                let completedCalculations = 0;
+                const allResults = [];
+                
+                timeSlots.forEach((timeSlot, index) => {
+                    // Create departure time for calculation
+                    const departureTime = new Date();
+                    departureTime.setHours(timeSlot.hour, 0, 0, 0);
+                    
+                    service.getDistanceMatrix({
+                        origins: [formData.location],
+                        destinations: destinations,
+                        travelMode: google.maps.TravelMode.DRIVING,
+                        unitSystem: google.maps.UnitSystem.IMPERIAL,
+                        avoidHighways: false,
+                        avoidTolls: false,
+                        drivingOptions: {
+                            departureTime: departureTime,
+                            trafficModel: google.maps.TrafficModel.BEST_GUESS
+                        }
+                    }, (response, status) => {
+                        if (status === google.maps.DistanceMatrixStatus.OK) {
+                            allResults[index] = {
+                                timeSlot: timeSlot,
+                                results: response.rows[0].elements
+                            };
+                        } else {
+                            console.warn(`Distance Matrix request failed for ${timeSlot.label}:`, status);
+                            allResults[index] = null;
+                        }
+                        
+                        completedCalculations++;
+                        
+                        // When all time slots are completed, process results
+                        if (completedCalculations === timeSlots.length) {
+                            try {
+                                const processedBatch = processBatchResults(batch, allResults, formData);
+                                resolve(processedBatch);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        }
+                    });
+                });
+                
+                // Timeout fallback
+                setTimeout(() => {
+                    if (completedCalculations < timeSlots.length) {
+                        console.warn('Distance Matrix timeout, using available results');
+                        try {
+                            const processedBatch = processBatchResults(batch, allResults, formData);
+                            resolve(processedBatch);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    }
+                }, 10000); // 10 second timeout
+            });
+        }
+
+        // Process the batch results from multiple time calculations
+        function processBatchResults(batch, allResults, formData) {
+            return batch.map((site, siteIndex) => {
+                let totalTravelTime = 0;
+                let validCalculations = 0;
+                let trafficData = [];
+                
+                // Process results from all time slots
+                allResults.forEach(timeResult => {
+                    if (timeResult && timeResult.results[siteIndex]) {
+                        const element = timeResult.results[siteIndex];
+                        
+                        if (element.status === 'OK') {
+                            const durationInTraffic = element.duration_in_traffic || element.duration;
+                            const travelTimeMinutes = Math.round(durationInTraffic.value / 60);
+                            
+                            totalTravelTime += travelTimeMinutes;
+                            validCalculations++;
+                            
+                            trafficData.push({
+                                time: timeResult.timeSlot.label,
+                                duration: travelTimeMinutes,
+                                distance: element.distance.text,
+                                distanceValue: element.distance.value
+                            });
+                        }
+                    }
+                });
+                
+                // Calculate average travel time or fallback
+                let averageTravelTime;
+                if (validCalculations > 0) {
+                    averageTravelTime = Math.round(totalTravelTime / validCalculations);
+                } else {
+                    // Fallback to simulated calculation
+                    averageTravelTime = calculateSimulatedDistance(formData.location, site.projectLocation);
+                }
+                
+                // Apply LDP pricing formula
+                const roundtripTimeMinutes = (averageTravelTime * 2) + formData.extraTime;
+                const truckingPrice = Math.round(roundtripTimeMinutes * 2.42);
+                const totalPrice = truckingPrice + (site.dumpFee || 0) + (site.ldpFee || 0);
+                
+                return {
+                    ...site,
+                    distance: averageTravelTime,
+                    roundtripTimeMinutes,
+                    truckingPrice,
+                    totalPrice,
+                    trafficData,
+                    calculationDetails: {
+                        baseTime: averageTravelTime * 2,
+                        extraTime: formData.extraTime,
+                        truckingRate: 2.42,
+                        dumpFee: site.dumpFee || 0,
+                        ldpFee: site.ldpFee || 0,
+                        validCalculations,
+                        averageOneWay: averageTravelTime
+                    },
+                    isRealTime: validCalculations > 0
+                };
+            });
+        }
+
+        // Enhanced displayResults function to show real-time data
+        function displayResults(matches, formData) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (matches.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="loading">
+                        No matching sites found
+                        <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">
+                            Try adjusting your criteria:<br>
+                            • Different expansion index<br>
+                            • Different rock type<br>
+                            • Different truck type
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const resultsHTML = matches.map(site => {
+                const priceRange = `$${Math.max(10, site.totalPrice - 20)}-$${site.totalPrice + 20}`;
+                const statusClass = site.status.toLowerCase().replace(/\s|\(|\)/g, '');
+                
+                // Create traffic data display for internal view
+                let trafficDataHTML = '';
+                if (isInternalView && site.trafficData && site.trafficData.length > 0) {
+                    const trafficRows = site.trafficData.map(data => 
+                        `<tr><td>${data.time}</td><td>${data.duration} min</td><td>${data.distance}</td></tr>`
+                    ).join('');
+                    
+                    trafficDataHTML = `
+                        <div class="traffic-data" style="margin-top: 0.5rem; font-size: 0.7rem;">
+                            <strong>Traffic Analysis:</strong>
+                            <table style="width: 100%; margin-top: 0.25rem;">
+                                <thead><tr><th>Time</th><th>Duration</th><th>Distance</th></tr></thead>
+                                <tbody>${trafficRows}</tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="site-number">
+                                ${site.siteNo} 
+                                ${site.isRealTime ? '' : ''}
+                            </div>
+                            <div class="price-tag">$${isInternalView ? site.totalPrice : priceRange}/load</div>
+                        </div>
+                        <div class="result-details">
+                            <div><strong>${site.company}</strong> - ${site.projectCity}, ${site.projectState}</div>
+                            <div>${site.quantity.toLocaleString()} cu yds • ${site.materialDesc} • ${site.expansionIndex}</div>
+                            <div>Rock: ${site.rock} • Truck: ${site.truckType}</div>
+                            <div class="result-details-internal">
+                                <div><strong>Contact:</strong> ${site.contactName} • ${site.contactPhone}</div>
+                                <div><strong>Email:</strong> ${site.contactEmail}</div>
+                                <div><strong>Travel Time:</strong> ~${site.distance} min one-way (${site.isRealTime ? 'Real-time' : 'Estimated'})</div>
+                                <div><strong>Roundtrip:</strong> ${site.roundtripTimeMinutes} min total</div>
+                            </div>
+                            <span class="status-badge status-${statusClass}">${site.status}</span>
+                        </div>
+                        ${isInternalView ? `
+                            <div class="calculation-details">
+                                <strong>Pricing Breakdown:</strong><br>
+                                One-way: ${site.calculationDetails.averageOneWay} min × 2 = ${site.calculationDetails.baseTime} min<br>
+                                + Extra Time: ${site.calculationDetails.extraTime} min = ${site.roundtripTimeMinutes} min total<br>
+                                Trucking: ${site.roundtripTimeMinutes} × $${site.calculationDetails.truckingRate} = $${site.truckingPrice}<br>
+                                Dump Fee: $${site.calculationDetails.dumpFee} • LDP Fee: $${site.calculationDetails.ldpFee}<br>
+                                <strong>Total: $${site.totalPrice}/load</strong>
+                                ${site.calculationDetails.validCalculations ? 
+                                    `<br><small>Based on ${site.calculationDetails.validCalculations} real-time calculations</small>` : 
+                                    '<br><small>Estimated - real-time data unavailable</small>'
+                                }
+                                ${trafficDataHTML}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            const summaryText = isInternalView ? 
+                `Matching ${formData.jobType === 'Export' ? 'Import' : 'Export'} Sites` :
+                `Available ${formData.jobType === 'Export' ? 'Import' : 'Export'} Opportunities`;
+
+            const realTimeCount = matches.filter(m => m.isRealTime).length;
+            const dataQualityIndicator = realTimeCount > 0 ? 
+                `<div style="color: #28a745; font-size: 0.8rem;">${realTimeCount}/${matches.length} sites calculated with real-time traffic data</div>` :
+                `<div style="color: #ffc107; font-size: 0.8rem;">Showing estimated travel times</div>`;
+
+            resultsDiv.innerHTML = `
+                <h3 style="color: #333; margin-bottom: 0.5rem;">${summaryText} (${matches.length})</h3>
+                ${dataQualityIndicator}
+                ${matches.length > 0 ? `
+                    <div style="background: rgba(102, 126, 234, 0.1); padding: 0.75rem; border-radius: 5px; margin: 1rem 0; font-size: 0.85rem;">
+                        <strong>Best Match:</strong> ${matches[0].siteNo} - ${matches[0].company}<br>
+                        Travel: ~${matches[0].distance} min one-way • Price: $${isInternalView ? matches[0].totalPrice : Math.round(matches[0].totalPrice * 1.1)}/load
+                        ${matches[0].isRealTime ? '' : ''}
+                    </div>
+                ` : ''}
+                ${resultsHTML}
+            `;
+
+            // Send email notification for external entries (simulated)
+            if (!isInternalView) {
+                simulateEmailNotification(formData);
+            }
+        }
+
+        function calculateQuotes() {
+            // Clear any previous error messages
+            const existingError = document.querySelector('.error-message');
+            if (existingError) existingError.remove();
+
+            // Get form values
+            const formData = {
+                jobType: document.getElementById('jobType').value,
+                location: document.getElementById('projectLocation').value,
+                quantity: parseInt(document.getElementById('quantity').value) || 0,
+                region: document.getElementById('region').value,
+                materialDesc: document.getElementById('materialDesc').value,
+                expansionIndex: document.getElementById('expansionIndex').value,
+                rock: document.getElementById('rock').value,
+                truckType: document.getElementById('truckType').value,
+                budget: parseFloat(document.getElementById('budget').value) || 0,
+                dumpFee: parseFloat(document.getElementById('dumpFee').value) || 0,
+                ldpFee: parseFloat(document.getElementById('ldpFee').value) || 0,
+                extraTime: parseInt(document.getElementById('extraTime').value) || 15
+            };
+
+            // Validate required fields
+            const requiredFields = ['jobType', 'location', 'region', 'materialDesc', 'expansionIndex', 'rock', 'truckType'];
+            const missingFields = requiredFields.filter(field => !formData[field]);
+            
+            if (missingFields.length > 0 || formData.quantity <= 0) {
+                showError('Please fill in all required fields (marked with *) and ensure quantity is greater than 0');
+                return;
+            }
+
+            document.getElementById('results').innerHTML = '<div class="loading">Calculating quotes and travel times...</div>';
+
+            // For external users, save the entry to database
+            if (!isInternalView) {
+                saveExternalEntry(formData);
+            }
+
+            // Simulate API call delay and process matches
+            setTimeout(() => {
+                const matches = findMatches(formData);
+                if (matches.length > 0) {
+                    calculateDistancesAndPricing(formData, matches);
+                } else {
+                    displayResults([], formData);
+                }
+                
+                // Add user location to map
+                geocodeAndAddMarker(formData.location, 'user');
+            }, 1000);
+        }
+
+        function findMatches(formData) {
+            return siteData.filter(site => {
+                // Apply status matching rules
+                if (!matchingRules.validStatuses.includes(site.status)) {
+                    return false;
+                }
+                
+                // Apply job type matching rules
+                const matchingJobTypes = matchingRules.getMatchingJobTypes(formData.jobType);
+                if (!matchingJobTypes.includes(site.jobType)) {
+                    return false;
+                }
+                
+                // Apply rock matching rules
+                const matchingRocks = matchingRules.getMatchingRocks(formData.rock);
+                if (!matchingRocks.includes(site.rock)) {
+                    return false;
+                }
+
+                // Apply truck type matching rules
+                const matchingTruckTypes = matchingRules.getMatchingTruckTypes(formData.truckType);
+                if (!matchingTruckTypes.includes(site.truckType)) {
+                    return false;
+                }
+
+                // Apply expansion index matching rules
+                const matchingIndexes = matchingRules.getMatchingExpansionIndexes(formData.expansionIndex, formData.jobType);
+                if (!matchingIndexes.includes(site.expansionIndex)) {
+                    return false;
+                }
+
+                return true;
+            });
+        }
+
+        // Save external entry to database
+        async function saveExternalEntry(formData) {
+            try {
+                const response = await fetch(`${API_BASE}/sites`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        entryType: 'external',
+                        jobType: formData.jobType,
+                        projectLocation: formData.location,
+                        quantity: formData.quantity,
+                        region: formData.region,
+                        materialDesc: formData.materialDesc,
+                        expansionIndex: formData.expansionIndex,
+                        rock: formData.rock,
+                        truckType: formData.truckType,
+                        budget: formData.budget,
+                        dumpFee: formData.dumpFee,
+                        ldpFee: formData.ldpFee,
+                        estimatedStart: document.getElementById('estimatedStart').value,
+                        projectCity: document.getElementById('projectCity').value,
+                        projectState: document.getElementById('projectState').value,
+                        projectZip: document.getElementById('projectZip').value,
+                        parcelNo: document.getElementById('parcelNo').value,
+                        notes: document.getElementById('notes').value,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to save entry: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('External entry saved:', result);
+                
+                // Show success message
+                showSuccessMessage('Entry submitted successfully! Our team will review and contact you soon.');
+                
+                return result;
+            } catch (error) {
+                console.error('Error saving external entry:', error);
+                showError('Unable to submit entry. Please try again or contact us directly.');
+            }
+        }
+
+        function showSuccessMessage(message) {
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = `
+                background: #28a745;
+                color: white;
+                padding: 0.75rem;
+                border-radius: 5px;
+                margin-bottom: 1rem;
+                font-size: 0.85rem;
+            `;
+            successDiv.textContent = message;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.parentNode.insertBefore(successDiv, resultsDiv);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 5000);
+        }
+       
+        function calculateSimulatedDistance(origin, destination) {
+            // Simulate distance calculation - in real implementation, use Google Maps API
+            // This is a simplified simulation based on string similarity
+            const baseTime = 45 + (Math.random() * 60); // 45-105 minutes base
+            return Math.round(baseTime);
+        }
+
+        function simulateEmailNotification(formData) {
+            // In real implementation, this would trigger an actual email
+            console.log('Email notification sent for external entry:', {
+                jobType: formData.jobType,
+                location: formData.location,
+                quantity: formData.quantity,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            resultsDiv.parentNode.insertBefore(errorDiv, resultsDiv);
+        }
+
+        function geocodeAndAddMarker(address, type) {
+            if (!address) return;
+            
+            geocoder.geocode({ address: address }, (results, status) => {
+                if (status === 'OK') {
+                    const location = results[0].geometry.location;
+                    
+                    // Remove existing user markers
+                    markers.forEach((marker, index) => {
+                        if (marker.getTitle() === 'Your Project Location') {
+                            marker.setMap(null);
+                            markers.splice(index, 1);
+                        }
+                    });
+                    
+                    const userMarker = new google.maps.Marker({
+                        position: location,
+                        map: map,
+                        title: 'Your Project Location',
+                        icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            fillColor: '#ff6b35',
+                            fillOpacity: 1,
+                            strokeColor: 'white',
+                            strokeWeight: 2,
+                            scale: 10,
+                            rotation: 0
+                        }
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="padding: 10px;">
+                                <h4 style="margin: 0 0 10px 0; color: #ff6b35;">Your Project Location</h4>
+                                <p><strong>Address:</strong> ${address}</p>
+                                <p><strong>Type:</strong> ${document.getElementById('jobType').value || 'Not specified'}</p>
+                                <p><strong>Quantity:</strong> ${document.getElementById('quantity').value || 0} cu yds</p>
+                            </div>
+                        `
+                    });
+
+                    userMarker.addListener('click', () => {
+                        infoWindow.open(map, userMarker);
+                    });
+                    
+                    markers.push(userMarker);
+                    map.panTo(location);
+                    map.setZoom(12);
+                }
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('quoteForm').reset();
+            document.getElementById('results').innerHTML = '';
+            
+            // Remove user markers but keep sample data markers
+            markers = markers.filter(marker => {
+                if (marker.getTitle() === 'Your Project Location') {
+                    marker.setMap(null);
+                    return false;
+                }
+                return true;
+            });
+
+            // Reset map view
+            map.setCenter({ lat: 32.7157, lng: -117.1611 });
+            map.setZoom(10);
+
+            // Clear any error messages
+            const existingError = document.querySelector('.error-message');
+            if (existingError) existingError.remove();
+        }
+
+        // Auto-populate city and state based on location input
+        document.getElementById('projectLocation').addEventListener('blur', function() {
+            const address = this.value;
+            if (address && address.includes(',')) {
+                const parts = address.split(',').map(part => part.trim());
+                if (parts.length >= 2) {
+                    // Try to extract city and state
+                    const cityInput = document.getElementById('projectCity');
+                    const stateInput = document.getElementById('projectState');
+                    
+                    if (!cityInput.value && parts[parts.length - 2]) {
+                        cityInput.value = parts[parts.length - 2];
+                    }
+                    
+                    if (!stateInput.value && parts[parts.length - 1]) {
+                        const lastPart = parts[parts.length - 1];
+                        if (lastPart.length === 2) {
+                            stateInput.value = lastPart.toUpperCase();
+                        } else if (lastPart.includes(' ')) {
+                            const statePart = lastPart.split(' ')[0];
+                            if (statePart.length === 2) {
+                                stateInput.value = statePart.toUpperCase();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize map when page loads
+        window.initMap = initMap;
+
+        // Add keyboard shortcut for internal view toggle
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                toggleLoginMode();
+                e.preventDefault();
+            }
+        });
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD12Kwozco4-Famo27S9KdmTOA6LhjFDO4&callback=initMap&v=weekly" defer></script>
+</body>
+</html>
